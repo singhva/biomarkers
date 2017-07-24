@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Insert title here</title>
+<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="css/bootstrap-theme.min.css">
+<link rel="stylesheet" type="text/css" href="css/bootstrap-select.min.css">
+<link rel="stylesheet" type="text/css" href="css/main.css">
+<link rel="stylesheet" href="js/jstree/themes/default/style.min.css" />
+<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="js/jquery-ui-1.10.4.min.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/bootstrap-select.min.js"></script>
+<script type="text/javascript" src="js/spin.min.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+<script type="text/javascript" src="js/chosen.jquery.min.js"></script>
+<script src="http://yui.yahooapis.com/3.16.0/build/yui/yui-min.js"></script>
+<script type="text/javascript" src="js/jstree/jstree.min.js"></script>
+<script type="text/javascript">
+
+	$(document).ready(function(){
+		$('.selectpicker').selectpicker();
+	});
+</script>
+</head>
+<body>
+
+	<div class="container">
+		<h2 class="page-header">Patient Information <span class="glyphicon glyphicon-user"></span></h2>
+		<ul class="nav nav-tabs">
+			<li class="active"><a href="#prior-treatment-history" data-toggle="tab">Patient history <span class="glyphicon glyphicon-list"></span></a></li>
+			<li><a href="#biopsy-report" data-toggle="tab">Biopsy Report <span class="glyphicon glyphicon-book"></span></a></li>
+		</ul>
+		<div class="tab-content">
+			<div id="prior-treatment-history" class="tab-pane fragment active">									
+				<form action="">
+					<div class="row">
+						<div class="col-md-4">
+							<div class="form-group">
+								<label>Cancer Type</label>
+								<select class="form-control selectpicker" id="cancer-type">
+									<option>Breast Cancer</option>
+								</select>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-12">
+							<div class="form-group selectpicker">
+								<label>Marker status</label>
+							</div>						
+						</div>
+						<div class="col-md-2">
+							<select class="form-control selectpicker">
+								<option>ER+</option>
+							</select>						
+						</div>
+						<div class="col-md-2">
+							<select class="form-control selectpicker">
+									<option>PR+</option>
+							</select>	
+						</div>
+						<div class="col-md-2">
+							<select class="form-control selectpicker">
+									<option>HER2 activation</option>
+							</select>	
+						</div>						
+					</div>
+					<div class="row">&nbsp;</div>
+					<p class="lead">Treatment History</p>
+					<div class="row well">
+						
+						<div class="bg-success col-md-5">
+							<div class="row">
+								<div class="col-md-4"></div><div class="col-md-4"><h4>EVENTS</h4></div><div class="col-md-4"></div>
+							</div>
+							<div class="row">
+								<div class="col-md-8">
+									<div class="form-group">
+										<label>Event name</label>
+										<select class="form-control selectpicker">
+												<option>left nipple-sparing mastectomy</option>
+										</select>		
+									</div>									
+								</div>
+								<div class="col-md-4">
+									<div class="form-group">
+										<label>Date</label>
+										<input value="2013-01-04" class="form-control">
+									</div>								
+								</div>
+							
+							</div>
+							<div class="row">
+								<div class="col-md-8">
+									<div class="form-group">
+										<label>Event name</label>
+										<select class="form-control selectpicker">
+												<option>Bone metastasis diagnosed</option>
+										</select>		
+									</div>									
+								</div>
+								<div class="col-md-4">
+									<div class="form-group">
+										<label>Date</label>
+										<input value="2013-02-04" class="form-control">
+									</div>								
+								</div>
+							
+							</div>
+							<div class="row">
+								<div class="col-md-8">
+									<div class="form-group">
+										<label>Event name</label>
+										<select class="form-control selectpicker">
+												<option>Pericardial/pleural biopsy sent for molecular profiling</option>
+										</select>		
+									</div>									
+								</div>
+								<div class="col-md-4">
+									<div class="form-group">
+										<label>Date</label>
+										<input value="2013-04-04" class="form-control">
+									</div>								
+								</div>
+							
+							</div>
+												
+						</div>
+						<div class="col-md-2"></div>
+						<div class="bg-info col-md-5">
+							<div class="row">
+								<div class="col-md-4"></div><div class="col-md-4"><h4>DRUGS</h4></div><div class="col-md-4"></div>
+							</div>
+							<div class="row">
+								<div class="col-md-8">
+									<div class="form-group">
+										<label>Drug name</label>
+										<select class="form-control selectpicker">
+												<option>Tamoxifen</option>
+										</select>		
+									</div>									
+								</div>
+								<div class="col-md-4">
+									<div class="form-group">
+										<label>Start Date</label>
+										<input value="2013-01-04" class="form-control">
+									</div>								
+								</div>
+							
+							</div>
+							<div class="row">
+								<div class="col-md-8">
+									<div class="form-group">
+										<label>Drug name</label>
+										<select class="form-control selectpicker" multiple>
+												<option selected>Leuprolide</option>
+												<option selected>Anastrazole</option>
+										</select>		
+									</div>									
+								</div>
+								<div class="col-md-4">
+									<div class="form-group">
+										<label>Start Date</label>
+										<input value="2013-02-04" class="form-control">
+									</div>								
+								</div>						
+							</div>
+							<div class="row">
+								<div class="col-md-8">
+									<div class="form-group">
+										<label>Drug name</label>
+										<select class="form-control selectpicker" multiple>
+												<option selected>Exemestane</option>
+												<option selected>Everolimus</option>
+										</select>		
+									</div>									
+								</div>
+								<div class="col-md-4">
+									<div class="form-group">
+										<label>Start Date</label>
+										<input value="2013-03-15" class="form-control">
+									</div>								
+								</div>						
+							</div>
+												
+						</div>
+
+					</div>
+				</form>				
+			</div>
+			<div id="biopsy-report" class="tab-pane fragment">
+				<div class="row">
+					<div class="col-md-12">&nbsp;</div>
+					<div class="col-md-6">
+					<table class="table">
+						<caption>Table 1: Gene Expression</caption>
+						<tr>
+							<th>Marker</th>
+							<th>Positive</th>
+							<th>Negative</th>
+							<th>Comments</th>
+						</tr>
+						<tr>
+							<td>TS</td>
+							<td><input type="checkbox"></td>
+							<td><input type="checkbox" checked></td>
+							<td>possible benefit with 5-fluorouracil</td>
+						</tr>
+						<tr>
+							<td>RRM1</td>
+							<td><input type="checkbox"></td>
+							<td><input type="checkbox" checked></td>
+							<td>possible benefit with gemcitabine</td>
+						</tr>
+						<tr>
+							<td>TOPO1</td>
+							<td><input type="checkbox" checked></td>
+							<td><input type="checkbox"></td>
+							<td>possible benefit from irinotecan</td>
+						</tr>
+						<tr>
+							<td>MGMT</td>
+							<td><input type="checkbox"></td>
+							<td><input type="checkbox" checked></td>
+							<td>possible benefit with temozolomide</td>
+						</tr>
+						<tr>
+							<td>ERCC1</td>
+							<td><input type="checkbox"></td>
+							<td><input type="checkbox" checked></td>
+							<td>possible benefit with platinums</td>
+						</tr>																								
+					</table>
+					<br><br>
+					<table class="table">
+						<caption>Table 2: Pathways</caption>
+						<tr>
+							<th>Pathway name</th>
+							<th>Comments</th>
+						</tr>
+						<tr>
+							<td>HER 1,2,3 pathway activation  (phosphoprotein analysis) </td>
+							<td>possible benefit HER antagonists lapatinib, pertuzumab, TDM-1, trastuzumab</td>
+						</tr>
+						<tr>
+							<td>JAK/STAT pathway activation  (phosphoprotein analysis)</td>
+							<td>possible benefit JAK2 inhibitors ruxolitinib</td>
+						</tr>
+					</table>
+					</div>
+					<div class="col-md-2"></div>
+					<div class="col-md-4">
+						<img alt="" src="images/cyst.png">
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-4">
+						<button class="btn btn-primary">Find matching clinical trials</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	
+	</div>
+
+</body>
+</html>

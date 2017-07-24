@@ -1,0 +1,77 @@
+<%!
+    import cherrypy
+%>
+<!DOCTYPE html>
+<!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
+<!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en" class="no-js ie9"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en" class="no-js"><!--<![endif]-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title><%block name="title"/></title>
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/custom-theme/jquery-ui-1.10.0.custom.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/bootstrap-yeti.min.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/bootstrap-docs.min.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/main.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/chosen.min.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/chosen-bootstrap.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/select2.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/select2-bootstrap.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/bootstrap-switch.min.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/toggle-switch.css">
+<link rel="stylesheet" type="text/css" href="${cherrypy.config['app.base_url']}/css/star-rating.min.css">
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/jquery-ui-1.10.4.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/chosen.jquery.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/ajax-chosen.jquery.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/select2.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/spin.min.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/bootstrap-switch.min.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/bootbox.min.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/jstree/jstree.min.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/jquery.sticky-div.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/utility.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/star-rating.min.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/index.js"></script>
+<script type="text/javascript" src="${cherrypy.config['app.base_url']}/js/dialogs.js"></script>
+
+<%block name="scripts"/>
+
+</head>
+
+<body>
+
+<div class="navbar navbar-inverse navbar-fixed-top">
+
+<div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Cancer Bio<span style="color:violet">m</span><span style="color:indigo">a</span><span style="color:blue">r</span><span style="color:green">k</span><span style="color:yellow">e</span><span style="color:orange">r</span><span style="color:red">s</span></a>
+        </div>
+        <div class="navbar-collapse collapse">
+			% if cherrypy.request.login is not None:
+			
+			<ul class="nav navbar-nav navbar-right">
+				<li class="active"><a href="#">Home</a></li>
+				<li><a href="${cherrypy.config['app.base_url']}/auth/logout">Logout</a></li>
+			</ul>
+
+			% endif
+        </div><!--/.navbar-collapse -->
+</div>
+
+
+
+</div>
+
+<div class="container" style="height: 100%">
+		${self.body()}
+</div>
+</body>

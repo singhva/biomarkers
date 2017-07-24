@@ -1,0 +1,800 @@
+<%!
+    from db.ncbi.pubmed import Pubmed
+    import cherrypy
+%>
+<%inherit file="base.html"/>
+<%block name="title">Welcome to Cancer Biomarkers</%block>
+<%block name="scripts">
+<script type="text/javascript">
+	var pmid_cache = new Object();
+	var data_cache = new Object();
+	var webenv_cache = new Object();
+	var reviewed_pmids = new Array();
+	var selected_pmids = new Array();
+	var base = "${cherrypy.config['app.base_url']}";
+	var spinner = new Spinner().spin(document.getElementById("waiting"));
+	
+	$(document).ready(function(){
+		document.getElementById("term").focus();
+		createDialogs();
+		$("#enter-gene-symbol-dialog").find("input").autocomplete({
+			source: base + "/lookups/autocomplete_gene_symbol",
+			minLength: 3,
+			delay: 500,
+			appendTo: "#enter-gene-symbol-dialog"
+		});
+		
+		$("#sort-by > li:first > button").css("font-weight", "bold").css("font-style", "italic");
+		$("#sort-by").on('click', function(event){
+			$(this).find("li > button").attr("style", "");
+			$(event.target).css("font-weight", "bold").css("font-style", "italic");
+		});
+		
+		$("#pubmed_search_form").submit(function(event) {
+			var $this = $(this);
+			
+			/*
+			var term = $this.find("input[name='term']");
+			var val = "";
+			$("#term2 > span").each(function(i) {
+				var text = $(this).html();
+				if( (text.trim() != "") && (text.trim() != String.fromCharCode(160)) ) {
+					val += " " + text;
+				}
+			});
+			term.val(val.trim());
+			*/
+			
+			if($this.find("input[name='term']").val().trim() != "") {
+				this.action = base + "/pubmed/search";
+				resetSearchForm(this);
+				$(this).find("input[name='get_filters']").val("yes");
+				
+				$('#please-wait-dialog').modal('show');
+								
+				onSubmitSearch(function(data) {
+					$this.find("input[name='query_key']").val(data["query_key"]);
+					reviewed_pmids = new Array(); // Dump the previously created Arrays since this is a new search
+					selected_pmids = new Array();
+				});
+			}
+			
+			else {
+				alert("Please enter a search term of Pubmed ID(s)");
+			}
+			event.preventDefault();
+		});
+				
+		$("#pager > li[id]").click(function(){
+			if(!$(this).hasClass("disabled")) {
+				var form = document.forms['pubmed_search_form'];
+				$(form).find("input[name='move']").val(this.id);
+				$(form).find("input[name='get_filters']").val("no");
+				$(form).find("input[name='selected_pmids']").val("");
+				spinner.spin(document.getElementById("waiting"));
+				
+				onSubmitSearch(function() {
+					$(form).find("input[name='move']").val("");
+				});
+			}
+			
+			else {
+				event.preventDefault();
+			}			
+		});
+		
+		// Functionality for viewing selected publications
+		$("#view-selected-pmids").tooltip();
+		$("#view-selected-pmids").click(function(event){
+			var self = $(this);
+			var spinner = new Spinner().spin(document.getElementById("waiting"));
+			var form = document.forms['pubmed_search_form'];
+			var url = base + "/pubmed/get";
+			form.action = url;
+			resetSearchForm(form);
+			$(form).find("input[name='selected_pmids']").val(selected_pmids.join("|"));
+			$(form).find("input[name='get_filters']").val("yes");
+			reviewed_pmids = new Array(); // Dump the previously created Arrays since this is a new search
+			selected_pmids = new Array();	
+			
+			onSubmitSearch(function(data) {
+				$(form).find("input[name='query_key']").val(data["query_key"]);
+				$('#please-wait-dialog').modal('hide');
+				if(spinner) spinner.stop();
+				$("#count-selected-pmids").html('0');
+			});
+			
+			event.preventDefault();
+		});
+		
+		$("#results-table-head").sticky_div({top:45, class_name: 'sticky-div-no-bg-color'});
+		$("#sidebar").sticky_div({top:45, class_name: 'sticky-div-no-bg-color'});
+		
+		$("#sidebar > ul > li > ul").hover(function() {
+			$(this).find("li:gt(5)").show();
+		}, 
+		function() {
+			$(this).find("li:gt(5)").hide();
+		});
+		
+	});
+	
+	function onSubmitSearch(onSuccessFunction, onFailureFunction) {
+		var form = document.forms['pubmed_search_form'];
+		var url = form.action;
+		$.ajax(url, { dataType:'json', data: $(form).serialize(),
+			success: function(data) {
+				data_cache = data;
+				processDataAndDisplay(data);
+				onSuccessFunction(data);			
+			},
+			error: function() {
+				spinner.stop();
+				onFailureFunction();
+			},
+			complete: function() {
+				spinner.stop();
+				$('#please-wait-dialog').modal('hide');
+			}
+		});
+	}
+	
+	/**
+		This function does processing of search results data from the server.
+	*/
+	function processDataAndDisplay(data) {
+		var max_per_page = data["max_per_page"];
+		var start_index = data["start_index"];
+		var end_index = data["end_index"];
+
+		$("#page_count_and_number > div:nth-child(2)").html("Showing "+start_index+" to "+end_index+" of "+data["count"]+" results", "info", 0);
+		$("#pagenum").val(data["pagenum"]);
+
+		var html = "";
+		for(var i = start_index; i <= end_index; i++) {
+			html += createSearchResultTableRow(data["publications"][i - start_index], i);
+		}
+		
+		$("#pager").find("li > span").html(data["pages"]);
+		$("#pager").find("li > input").val(data["pagenum"]);
+		
+		var previous = $("#previous");
+		var next = $("#next");		
+		var first = $("#first");
+		var last = $("#last");
+		
+		if(data["pagenum"] == 1) {
+			previous.addClass("disabled");
+			first.addClass("disabled");
+			if((data["count"] < max_per_page)) {
+				next.addClass("disabled");
+				last.addClass("disabled");
+			}				
+			else {
+				next.removeClass("disabled");
+				last.removeClass("disabled");
+			}				
+			
+		}
+		
+		else if(data["pagenum"] == data["pages"]) {
+			next.addClass("disabled");
+			last.addClass("disabled");
+			previous.removeClass("disabled");
+			first.removeClass("disabled");
+		}
+		
+		else {
+			first.removeClass("disabled");
+			previous.removeClass("disabled");
+			next.removeClass("disabled");
+			last.removeClass("disabled");
+		}
+		
+		if(data["filters"]) {
+			var journal_names_ul = $("#sidebar > ul > li:first > ul");
+			var publication_years_ul = $("#sidebar > ul > li:nth-child(2) > ul");
+			
+			if(data["pagenum"] == 1) {
+				journal_names_ul.html("");
+				for(var journal_name in data["filters"]["journal_names"]) {
+					journal_names_ul.append("<li><a href='#'>" + journal_name + "</a></li>");
+				}
+				
+				for(var publication_year in data["filters"]["publication_years"]) {
+					publication_years_ul.append("<li><a href='#'>" + publication_year + "</a></li>");
+				}
+			}
+			
+			$(journal_names_ul).find("li:gt(5)").hide();
+			$(journal_names_ul).find("li > a").click(function(event) {
+				$(this).filterTable('${Pubmed.FILTER_KEY_JOURNAL}', $(this));
+			});
+			
+			$(publication_years_ul).find("li:gt(5)").hide();
+			$(publication_years_ul).find("li > a").click(function(event) {
+				$(this).filterTable('${Pubmed.FILTER_KEY_JOURNAL}', $(this));
+			});	
+		}
+		
+		$("#results > table > tbody").html(html).find('.label-genes, .label-diseases').tooltip();	
+		$("#results > table > tbody").find(".rating").rating({
+			'showCaption' : false,
+			'showClear' : false	
+		});
+	}
+	
+	function searchDatabase(form) {
+		var spinner = new Spinner().spin(document.getElementById("results"));
+		$.ajax("dbsearch", { dataType:'json', data:$(form).serialize(), 
+			success:function(data) {
+				var html = "<ol>";
+				for(var marker in data) {
+					html += "<li>";
+					html += marker;
+					html += "<br>";
+					html += "Agent associations: ";
+					for(var i = 0; i < data[marker].length; i++) {
+						var association = data[marker][i];
+						html += "<a href=\"javascript:void(0)\" data-drug_id='"+association.drug_id+"' data-gene_sym='"+marker+"' onclick=\"return showPublications(this)\">"+association.drug_name+" ("+association.drug_actions.join(",")+");  "+"</a>";
+					}
+					html += "<div class='well' style='display: none'></div>";
+					html += "</li>";
+				}
+				html += "</ol>";
+				$("#results").html(html);
+			},
+			complete: function() {
+				spinner.stop();
+			}		
+		});
+		
+		return false;
+	}
+	
+	function showPublications(element) {
+		var drug_id = $(element).attr("data-drug_id");
+		var gene_sym = $(element).attr("data-gene_sym");
+		var spinner = new Spinner().spin(element);
+		$.ajax("get_drug_gene_publications?drug_id="+drug_id+"&gene_sym="+gene_sym, { dataType:'json',
+			success: function(data) {
+				var html = "<ol>";
+				for(var i = 0; i < data.length; i++) {
+					html += "<li>";					
+					html += "<a href='javascript:void(0)' onclick='getPublicationDetails(this)'>"+data[i].pmid+"</a>";
+					html += "<br>";
+					html += "<small>"+data[i].title+"</small>";
+					html += "</li>";
+				}
+				html += "</ol>";
+				$(element).parent("li").children("div").html(html).show();
+			},
+			complete: function() {
+				spinner.stop();
+			}
+		});
+		return false;
+	}
+	
+	function getPublicationDetails(element) {
+		var pmid = $(element).attr("data-pmid");
+		var spinner = new Spinner().spin(document.getElementById("waiting"));
+		var form = $("#form-template-div > form").clone();
+		$(form).attr("id", "form-"+pmid);
+		
+		/*
+		if(pmid in pmid_cache) {
+			editPublication(form, pmid_cache[pmid]);
+			spinner.stop();
+			$(element).popUpEdit(form);
+		}
+		*/
+		//else {
+		$.ajax(base + "/pubmed/analyze_publication?pmid="+pmid, { dataType:'json',
+			success: function(data) {
+				pmid_cache[pmid] = data;
+				createFormData(form, data);
+				$(element).popUpEdit(form);
+			},
+			complete: function() {
+				spinner.stop();
+			}
+		});
+		//}
+		
+		$(element).parents("tr").addClass("reviewed");
+		reviewed_pmids.push(pmid);
+		
+		return false;		
+	}
+	
+	function replicateAllPanels(element) {		
+		$("#enter-gene-symbol-dialog").dialog({
+		      height: 300,
+		      modal: true,
+		      buttons: [
+		      	{text: "Ok", class:"btn btn-primary", click: function(){  
+		      		var allPanelsDiv = $(element).siblings("div[data-name='all_panels']");
+		      		var duplicateAllPanelsDiv = allPanelsDiv.clone();
+		      		duplicateAllPanelsDiv.attr("data-name", "all_panels").show();
+		      		$(duplicateAllPanelsDiv).find("p[data-name='marker_gene_name']").html($(this).find("input").val());
+		      		allPanelsDiv.parent().append(duplicateAllPanelsDiv);
+		      		$(this).find("input").val("");
+		      		$(this).dialog("close");
+		      	} },
+		      	{text: "Cancel", class:"btn btn-danger", click: function() { $(this).find("input").val(""); $(this).dialog("close"); }}
+		      ]
+		});
+	}
+	
+	function replicateOnePanel(element) {
+		var column = $(element).parents(".col-md-3");
+		var panel = $("#").parents(".panel").clone();
+		$(column).append(panel);
+	}
+	
+	function removeAllPanels(element) {
+		bootbox.confirm("Are you sure you want to remove this marker?", function(result) {
+			if(result) {
+				var allPanelsDiv = $(element).parents("div[data-name='all_panels']");
+				$(allPanelsDiv).remove();				
+			}
+		});		
+	}
+		
+</script>
+</%block>
+
+
+<div class="modal fade" id="please-wait-dialog" role="dialog" aria-labelledby="pleaseWaitDialogLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="pleaseWaitDialogLabel">Please wait</h4>
+      </div>
+      <div class="modal-body">
+      	<div class="progress progress-striped active">
+			<div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 100%;"></div>
+		</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="read-abstract-dialog" title="Abstract" style="display: none" data-pmid="">
+	<p></p>
+</div>
+
+<div id="enter-gene-symbol-dialog" title="Enter a gene name" style="display: none">
+	<div class="ui-widget">		  
+		<input type="text" class="form-control">
+	</div>
+</div>
+
+<div id="enter-disease-name-dialog" title="Enter a disease name" style="display: none">
+	<div class="ui-widget">		  
+		<p style="margin-bottom: 0px">Annotated word/phrase: <a href="#"></a></p>
+		<p style="margin-top: 0px">Annotation: <i>No annotation selected</i></p>
+		<input type="text" class="form-control">
+		<input type="hidden">
+	</div>
+</div>
+
+<div id="enter-mutation-name-dialog" title="Enter a mutation name" style="display: none">
+	<div class="ui-widget">		  
+		<input type="text" class="form-control">
+	</div>
+</div>
+
+<div id="enter-pathway-name-dialog" title="Enter a pathway name" style="display: none">
+	<div class="ui-widget">		  
+		<input type="text" class="form-control">
+	</div>
+</div>
+
+<div id="enter-drug-name-dialog" title="Enter a drug name" style="display: none">
+	<div class="ui-widget">		  
+		<input type="text" class="form-control">
+		<input type="hidden" value="">
+	</div>
+</div>
+
+<div id="show-filters" title="Filters" style="display:none">
+	<div class="ui-widget">
+		<ul></ul>
+	</div>
+</div>
+<div id='form-holder-div' style='display:none; overflow-x:auto'>
+	<div class='ui-widget'></div>
+</div>
+
+<div id="edit-publication" title="Edit Publication" style="display: none"></div>
+
+<div style="display:none" id="form-template-div">
+	<form onsubmit="submitCuratedForm(this)">	
+		<!-- Nav tabs -->
+		<ul class="nav nav-tabs">
+		  <li class="active"><a href="#" data-toggle="tab" data-target=" > div[data-name='study-info']">Study Info</a></li>
+		  <li><a href="#" data-toggle="tab" data-target=" > div[data-name='patient-demographics']">Patient Demographics</a></li>
+		  <li><a href="#" data-toggle="tab" data-target=" > div[data-name='disease-info']">Disease Info</a></li>
+		  <li><a href="#" data-toggle="tab" data-target=" > div[data-name='marker-status']">Marker Status</a></li>
+		  <li><a href="#" data-toggle="tab" data-target=" > div[data-name='drug-info']">Drug Info</a></li>
+		</ul>
+		
+		<div class="tab-content" id="tab-content-">
+			<div class="tab-pane active" data-name="study-info" style="padding-top: 20px; padding-bottom: 10px">
+				<div class="form-group rounded-corner">
+					<input type="hidden" name="abstract" />
+					<span class="curation-block-label">Trial Info <span class="evidence-source" style="float: right">From Pubmed</span></span>
+					<select name="trial_info" class="form-control select2" data-placeholder="Select type(s) of clinical trial" multiple>
+						% for trial_type in trial_types:
+							<option value = "${trial_types[trial_type]}">${trial_types[trial_type]}</option>
+						% endfor        			   			
+					</select>
+					<p class="text-warning"></p>
+				</div>
+				<div class="form-group rounded-corner">
+					<span class="curation-block-label">Trial Ids <span class="evidence-source" style="float: right">From ClinicalTrials.gov</span></span>
+					<!-- <select name="trial_ids" class="form-control" multiple></select> -->
+					<input name="trial_ids" class="form-control select2" type="hidden" />
+				</div>
+				<div class="form-group rounded-corner">
+					<span class="curation-block-label">Publication Type <span class="evidence-source" style="float: right">From Pubmed</span></span>
+					<!-- <input name="article_type" id="edit-article-type" class="form-control"/> -->
+					<select name="publication_types" class="form-control select2" data-placeholder="Select type(s) of publication" multiple>
+						% for type in Pubmed.PUBLICATION_TYPES:
+							<option value = "${type}">${type}</option>
+						% endfor
+					</select>
+				</div>
+				<div class="form-group rounded-corner">
+					<span class="curation-block-label">Study Results <span class="evidence-source" style="float: right">From Pubmed</span></span>
+					<textarea name="study_results" rows="6" class="form-control"></textarea>
+				</div>	  
+			</div>
+			<div class="tab-pane" data-name="patient-demographics" style="padding-top: 20px; padding-bottom: 10px">				  		
+				<div class="rounded-corner"> 
+					<span class="curation-block-label">Patient Demographics</span> 			
+					<div class="row">
+						<div class="form-group col-md-4">
+							<label>Gender</label>    				
+							<select name="gender" class="form-control">
+								<option value="male">Male</option>
+								<option value="female">Female</option>
+								<option value="both">Both</option>
+							</select>
+						</div>
+						<div class="form-group col-md-4">
+							<label>Minimum Age</label>
+							<input type="text" name="minimum_age" class="form-control">
+						</div>
+						<div class="form-group col-md-4">
+							<label>Maximum Age</label>
+							<input type="text" name="maximum_age" class="form-control">
+						</div>				
+					</div>	
+					<div class="form-group">
+						<label>Enrolled patient count</label>
+						<input type="text" name="count" class="form-control">
+					</div>	       		       		
+					<div class="form-group">
+						<label>Inclusion criteria</label>
+						<textarea rows="6" name="inclusion_criteria" class="form-control"></textarea>       				
+					</div>
+				</div>			
+			</div>
+			
+			<div class="tab-pane" data-name="disease-info" style="padding-top: 20px; padding-bottom: 10px">
+				<div class="form-group rounded-corner">
+					<span class="curation-block-label">Cancer Type</span>
+					<div>
+						<p><b>Auto generated annotations (read-only)</b></p>
+						<input name="disease_annotations_nlp" class="form-control chzn-ajax-select select2" type="hidden" disabled />	
+					</div>		
+					<div class="rounded-corner-yellow">
+						<p><b>Your manual annotations</b></p>	
+						<input name="disease_annotations_manual" class="form-control chzn-ajax-select" type="hidden" />
+						<!-- <select name="cancer_type_manual"></select> -->
+					</div>
+				</div>			
+			</div>
+			
+			<div class="tab-pane" data-name="marker-status" style="padding-top: 20px; padding-bottom: 10px">
+				<span class="curation-block-label">Marker Status</span> 
+				<div class="well">					
+					<button type="button" class="btn btn-default btn-sm" onclick="replicateAllPanels(this);"><span class="glyphicon glyphicon-plus"></span> Add another gene</button>
+
+					<div data-name="all_panels" style="display: none" class="rounded-corner-yellow">
+						<button type='button' class='close' aria-hidden='true' onclick="$(this).parent().remove()">&times;</button>
+						<p data-name="marker_gene_name" class="lead">ERBB2</p>
+						<div class="row">
+							<div class="col-md-3">		
+								<div class="panel panel-danger" data-name="mutation_panel">
+									<div class="panel-heading text-center">
+										<button type='button' class='close pull-left' aria-hidden='true' onclick="replicateOnePanel(this);">+</button>
+										<span>Mutation</span>
+										<span style="font-size:10px">
+											<a href="javascript: void(0)" onclick="enterMutationName(this)">Mutation name</a>
+											<span class="glyphicon glyphicon-pencil"></span>
+										</span>										
+										<button type='button' class='close' aria-hidden='true' onclick="$(this).parents('.panel').remove()">&times;</button>
+									</div>
+									
+									<div class="panel-body">							
+										<div class="form-group">																															
+											<div class="btn-group btn-group-justified btn-group-xs" data-toggle="buttons" data-name="is_synonymous">
+											  <label class="btn btn-mutation"><input type="radio" name="is_synonymous" value="yes">Syn</label>
+											  <label class="btn btn-mutation"><input type="radio" name="is_synonymous" value="no">Non-syn</label>
+											  <label class="btn btn-mutation active"><input type="radio" name="is_synonymous" value="un" checked>Unknown</label>					  
+											</div>
+										</div>
+										
+										<div class="form-group">											
+											<div class="btn-group btn-group-justified btn-group-xs" data-toggle="buttons" data-name="is_activating">
+											  <label class="btn btn-mutation"><input type="radio" name="is_activating" value="yes">Activating</label>
+											  <label class="btn btn-mutation"><input type="radio" name="is_activating" value="no">Non-activating</label>
+											  <label class="btn btn-mutation active"><input type="radio" name="is_activating" value="un" checked>Unknown</label>										  								  
+											</div>									
+										</div>
+										
+										<div class="form-group">											
+											<div class="btn-group btn-group-justified btn-group-xs" data-toggle="buttons" data-name="is_singleSite">
+											  <label class="btn btn-mutation"><input type="radio" name="is_singleSite" value="single">Single-site</label>
+											  <label class="btn btn-mutation"><input type="radio" name="is_singleSite" value="multi">Multi-site</label>
+											  <label class="btn btn-mutation active"><input type="radio" name="is_singleSite" value="un" checked>Unknown</label>									  
+											</div>											 
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="panel panel-primary" data-name="ge_panel">
+									<div class="panel-heading text-center">Gene Expression
+										<button type='button' class='close' aria-hidden='true' onclick="$(this).parents('.panel').remove()">&times;</button>
+									</div>	
+									<div class="panel-body">
+										<div class="form-group">
+											<div class="btn-group btn-group-justified btn-group-xs" data-toggle="buttons" data-name="expression_level">
+											  <label class="btn btn-primary" style="font-size: 10px"><input type="radio" name="expression_level" value="over">Over</label>
+											  <label class="btn btn-primary" style="font-size: 10px"><input type="radio" name="expression_level" value="under">Under</label>
+											  <label class="btn btn-primary active" style="font-size: 10px"><input type="radio" name="expression_level" value="un" checked>Unknown</label>									  
+											</div>
+										</div>							
+									</div>
+								</div>	
+							</div>
+							<div class="col-md-3">
+								<div class="panel panel-info" data-name="phosphorylation_panel">
+									<div class="panel-heading text-center">Phosphorylation
+										<button type='button' class='close' aria-hidden='true' onclick="$(this).parents('.panel').remove()">&times;</button>
+									</div>	
+									<div class="panel-body">
+										<div class="form-group">
+											<!-- <input type="checkbox" name="is_phosphorylated" checked="" data-on-color="info" data-size="small" data-on-text="Yes" data-off-text="No"> Phosphorylated?  -->								
+											<div class="btn-group btn-group-justified btn-group-xs" data-toggle="buttons" data-name="is_phosphorylated">
+											  <label class="btn btn-info" style="font-size: 10px"><input type="radio" name="is_phosphorylated" value="yes">Yes</label>
+											  <label class="btn btn-info" style="font-size: 10px"><input type="radio" name="is_phosphorylated" value="no">No</label>
+											  <label class="btn btn-info active" style="font-size: 10px"><input type="radio" name="is_phosphorylated" value="un" checked>Unknown</label>									  
+											</div>
+										</div>													
+									</div>
+								</div>	
+							</div>
+							<div class="col-md-3">
+								<div class="panel panel-warning" data-name="pathway_panel">
+									<div class="panel-heading text-center">
+										<button type='button' class='close pull-left' aria-hidden='true' onclick="replicateOnePanel(this);">+</button>
+										<span>Pathway</span>
+										<span style="font-size:10px">
+											<a href="javascript: void(0)" onclick="enterPathwayName(this)">Pathway name</a>
+											<span class="glyphicon glyphicon-pencil"></span>
+										</span>
+										<button type='button' class='close' aria-hidden='true' onclick="$(this).parents('.panel').remove()">&times;</button>
+									</div>	
+									<div class="panel-body">
+										<div class="form-group">
+											<!-- <input type="checkbox" name="is_phosphorylated" checked="" data-on-color="info" data-size="small" data-on-text="Yes" data-off-text="No"> Phosphorylated?  -->								
+											<div class="btn-group btn-group-justified btn-group-xs" data-toggle="buttons" data-name="is_activated">
+											  <label class="btn btn-pathway" style="font-size: 10px"><input type="radio" name="is_activated" value="yes">Activated</label>
+											  <label class="btn btn-pathway" style="font-size: 10px"><input type="radio" name="is_activated" value="no">Not-activated</label>
+											  <label class="btn btn-pathway active" style="font-size: 10px"><input type="radio" name="is_activated" value="un" checked>Unknown</label>									  
+											</div>
+										</div>													
+									</div>
+								</div>	
+							</div>		
+						</div>
+						<div class="row"></div>
+						<div class="row"></div>
+					</div>
+				</div>			
+			</div>
+			
+			<div class="tab-pane" data-name="drug-info" style="padding-top: 20px; padding-bottom: 10px">
+				<div class="form-group rounded-corner">			
+					<span class="curation-block-label">Drug Benefit</span>
+					<br>
+					<!-- <input name="drug_names" class="form-control" type="hidden" value=" " /> -->
+					<div style="width: 25%">
+						<input type="text" name="enter_drug_name" class="form-control ui-front" placeholder="Search for drug name to add">
+					</div>
+					<br><br>
+					<div style="width: 50%">
+						<table data-name="drugs" style="width: 100%" class="table">
+							<thead>
+								<tr>
+									<th>Drug Name</th>
+									<th>Effect</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<br><br>	
+				</div>
+				<div class="row"></div>		
+			</div>
+			
+		</div>
+	</form>
+</div>
+	
+<div class="row">
+	<h3 style="text-align: center">&nbsp;</h3>
+	<div class="col-md-2">
+		<span></span>
+	</div>
+	<div class="col-md-8">
+		<p class="lead text-center">Search Pubmed</p>		
+		<form action="" role="form"  name="pubmed_search_form" id="pubmed_search_form">
+			
+			<div class="col-md-6">
+				<div class="form-group">					<!-- value="12482041" -->	
+					<input type="text" name="term" id="term" class="form-control" autocomplete="off" />
+					<!-- <div contenteditable="true" spellcheck="false" id="term2" class="form-control single-line" placeholder="Enter pubmed search terms"></div> -->				
+				</div>
+			</div>
+			<input type="submit" class="btn btn-primary" value="Submit">
+			<a class="btn btn-link" href="#" onclick="$('#show-advanced-options').dialog('open');">Advanced options</a>	
+						
+			<div class="form-group">				
+				<div id="show-advanced-options" title="Advanced Options" style="display: none">
+					<div class="ui-widget">
+						<p><input name="with_trials_only" type="checkbox" value="1" checked> Show publications with clinical trial ids only</p>
+					</div>
+				</div>
+			</div>
+			<input type="hidden" name="sort_key" value="${Pubmed.SORT_KEY_RELEVANCE[0]}" />
+			<div id="filters">
+				<!-- <input type="hidden" name="filter" value="" />  -->
+			</div>				
+			<input type="hidden" name="WebEnv" value="" />
+			<input type="hidden" name="move" value="">
+			<input type="hidden" name="max_per_page" value="10">
+			<input type="hidden" name="get_filters" value="yes">
+			<input type="hidden" name="selected_pmids" /> <!-- This contains PMIDs selected by user to view/save -->
+			<input type="hidden" name="pmid_list_name" value="" /> <!-- This is the name of the PMID list which the user wants to view -->
+			<input type="hidden" name="query_key" value="" />
+			<p class="help-block"><small><i>No special characters like +, ?, #</i></small></p>
+				
+			<ul class="pager" id="pager">
+				<li id="first" class="disabled"><a href="#"><span class="glyphicon glyphicon-fast-backward"></span></a></li>
+				<li id="previous" class="disabled"><a href="#"><span class="glyphicon glyphicon-backward"></span></a></li>
+				<li><input type="text" name="pagenum" id="pagenum" value="1" style="width: 50px" autocomplete = "off"/></li>
+				<li> of<span>1</span></li>
+				<li id="next" class="disabled"><a href="#"><span class="glyphicon glyphicon-forward"></span></a></li>
+				<li id="last" class="disabled"><a href="#"><span class="glyphicon glyphicon-fast-forward"></span></a></li>
+			</ul>
+			<div class="pager" id="page_count_and_number">
+				<div class="col-md-4">				
+					<div class="btn-group pull-left">
+						<button type="button" class="btn btn-default btn-sm disabled"><span class="glyphicon glyphicon-ok-circle"></span></button>
+						<button type="button" class="btn btn-default btn-sm disabled"><span class="glyphicon glyphicon-remove-circle"></span></button>
+						<button type="button" class="btn btn-default btn-sm disabled"><span class="glyphicon glyphicon-floppy-disk"></span></button>
+						<button type="button" class="btn btn-default btn-sm disabled" id="view-selected-pmids" title="Click to see your selected publications"><span class="glyphicon glyphicon-zoom-in"></span></button>
+					</div>				
+				</div>
+				<div class="col-md-4"></div>
+				<div class="col-md-4"></div>
+			</div>
+			<div class="center-block" style="text-align: center"></div>
+		</form>
+	</div>	
+	<div class="col-md-2">
+	<!-- 
+		<p class="lead">Database</p>
+		<form action="" role="form" onsubmit="return searchDatabase(this);">
+			<div class="form-group">
+				<input type="text" name="term" id="term" class="form-control" placeholder="Marker name"/>
+			</div>
+			<div class="form-group">
+				<input type="submit" class="btn btn-default" value="Submit">
+			</div>
+			
+		</form>
+	 -->
+	</div>		
+</div>
+
+<div class="row">		
+	<div class="col-md-12" id="waiting" data-spy="affix" data-offset-top="60" data-offset-bottom="200"></div>
+	<div class="col-md-3">
+		<div class="bs-docs-sidebar" id="sidebar">
+			<ul class="nav bs-docs-sidenav">
+				<li class="active">
+					<a href="#">Journals</a>
+					<ul class="nav"></ul>
+				</li>
+				<li class="active">
+					<a href="#">Years</a>
+					<ul class="nav"></ul>
+				</li>				
+			</ul>
+		</div>
+	</div>
+	<div class="col-md-9">
+		<div id="results">
+			<!-- 
+			 <div style="padding: 8px">
+			 	Sorted by: <span id="sorted-by" class="label label-primary">${Pubmed.SORT_KEY_RECENTLY_ADDED[1]}</span>
+			 </div>
+		    -->
+			 <div class="alert alert-info" style="padding: 8px; display: none" id="results-alert"></div>
+			 
+			 <table class="table">
+			 	<thead id="results-table-head">
+				 	<tr>
+				 		<th width="3%"><a href="#"><span class="badge" id="count-selected-pmids" title="Click here to select/deselect all">0</span></a></th>
+				 		<th width="82%">Publication
+							<div class="btn-group">
+							  <button class="btn btn-link btn-xs dropdown-toggle" type="button" data-toggle="dropdown">
+							    Sort by <span class="caret"></span>
+							  </button>
+							  <ul class="dropdown-menu" id="sort-by">
+							  	<li>
+							  		<button class="btn btn-link btn-xs" onclick="$(this).sortTable('${Pubmed.SORT_KEY_RELEVANCE[0]}');">
+							  			${Pubmed.SORT_KEY_RELEVANCE[1]}						  			
+							  		</button>							  		
+							  		<span class='glyphicon glyphicon-sort-by-attributes pull-right clickSpan link' style="margin-right: 10px"></span>
+							  	</li>
+							  	<li>
+							  		<button class="btn btn-link btn-xs" onclick="$(this).sortTable('${Pubmed.SORT_KEY_JOURNAL[0]}');">
+							  			${Pubmed.SORT_KEY_JOURNAL[1]}						  			
+							  		</button>							  		
+							  		<span class='glyphicon glyphicon-sort-by-attributes pull-right clickSpan link' style="margin-right: 10px"></span>
+							  	</li>							  	
+							  	<li>
+							  		<button class="btn btn-link btn-xs" onclick="$(this).parents('table').sortTableByRecentlyAdded(data_cache);">
+							  			${Pubmed.SORT_KEY_RECENTLY_ADDED[1]}							  			
+							  		</button>
+							  		<span class='glyphicon glyphicon-sort-by-attributes pull-right clickSpan link' style="margin-right: 10px"></span>
+							  	</li>							  							  								  	
+							  </ul>
+							</div>	
+							
+							<div style="display:inline" id="active-filters">							
+							<!-- 
+							  <button class="btn btn-link btn-xs dropdown-toggle" type="button"onclick="$('#show-filters').dialog('open');" id="filter-by">
+							    Filter by <span class="caret"></span>
+							  </button>
+							 -->
+							</div>												 								 		
+				 		
+				 		</th>					 		
+				 		<!-- <th class="col-md-1">Date <span class="glyphicon glyphicon-sort clickSpan"></span></th> -->
+				 		<th width="15%">Ratings</th>
+				 		<!--
+				 		<th width="7%">Conditions <span class="glyphicon glyphicon-sort clickSpan"></span></th>				 		 
+				 		<th width="20%">Biomarkers <span class="glyphicon glyphicon-sort clickSpan"></span></th>
+				 		<th width="15%">Drugs <span class="glyphicon glyphicon-sort clickSpan"></span></th>
+				 		 -->
+				 	</tr>
+			 	</thead>
+			 	<tbody>
+			 	</tbody>				 
+			 </table>			 
+		</div>
+	</div>			
+</div>

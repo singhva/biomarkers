@@ -1,0 +1,255 @@
+@CHARSET "US-ASCII";
+
+body {
+	background-color: #fff;
+	height: auto;
+}
+
+html, body {
+    min-height: 100%;
+    height: 100%;
+    margin: 0;
+  	padding: 0;
+}
+
+a:active, a:focus {
+    outline: none;
+    text-decoration: none;
+}
+
+
+/**** TOOLTIPS *********/
+a.link-tooltip:link {
+	/*border-bottom: 3px #66CC99 dotted;
+	color: #3300FF;
+	*/
+}
+
+a.link-tooltip:hover {
+	/*border-bottom: 3px #66CC99 dotted;
+	text-decoration: none;
+	*/
+}
+
+a.select-option-tooltip:link {
+	border-bottom: 1px #000 dotted;
+	color: #3300FF;
+}
+
+a.select-option-tooltip:hover {
+	border-bottom: 1px #66CC99 dotted;
+	text-decoration: none;
+}
+
+/*************************/
+
+select {
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+   box-sizing: content-box;
+}
+
+.curation-block-label {
+	display: block; 
+	font-weight: bold; 
+	margin: 0 0 5px;
+	text-transform: uppercase;
+}
+
+.evidence-source {
+	color: #8a6d3b;
+	font-weight: normal;
+	font-style:italic;
+	font-size: 10px;
+}
+
+/****** Rounded Corner DIVs *****/
+.rounded-corner {
+	border-radius: 5px 5px 5px 5px; 
+	-moz-border-radius: 5px 5px 5px 5px; 
+	-webkit-border-radius: 5px 5px 5px 5px;
+	background-color: #eee;
+	padding: 1%;
+}
+
+.rounded-corner-white {
+	border-radius: 5px 5px 5px 5px; 
+	-moz-border-radius: 5px 5px 5px 5px; 
+	-webkit-border-radius: 5px 5px 5px 5px;
+	background-color: #fff;
+	padding: 1%;
+}
+
+.rounded-corner-yellow {
+	border-radius: 5px 5px 5px 5px; 
+	border: 1px solid #faebcc;
+	-moz-border-radius: 5px 5px 5px 5px; 
+	-webkit-border-radius: 5px 5px 5px 5px;
+	padding: 1%;
+	margin-top: 1%;
+	margin-bottom: 1%;
+	background-color: #FBEED5
+}
+
+.rounded-corner-label {
+	border-radius: 2px 2px 2px 2px; 
+	-moz-border-radius: 2px 2px 2px 2px; 
+	-webkit-border-radius: 2px 2px 2px 2px;
+	background-color: #eee;
+	padding: 0px 1% 0px 1%;
+	margin: 0px 3px 0px 3px;
+}
+/***************************/
+
+/* Sticky Div Classes */
+.sticky-div {
+	border-radius: 0px 0px 5px 5px; 
+	border: 1px solid #bce8f1;
+	-moz-border-radius: 5px 5px 5px 5px; 
+	-webkit-border-radius: 0px 0px 5px 5px;
+	background-color: #d9edf7;
+	z-index: 1000;
+}
+
+.sticky-div-no-bg-color {
+	background-color: #fff;
+	z-index: 1000;
+}
+/*********************/
+
+/* Review classes */
+.last-reviewed {
+	border-left: 2px solid #5cb85c; 
+}
+
+.reviewed {
+	border-left: 2px solid #428bca;
+}
+/*******************/
+
+.clickSpan {
+	cursor: pointer;
+}
+
+.link {
+	color: #428bca;
+}
+
+.thumbs-up-active {
+	color:green; 
+	font-weight: 900;
+	text-decoration: underline;
+}
+
+.thumbs-down-active {
+	color: red; 
+	font-weight: 900;
+	text-decoration: underline;
+}
+
+.thumbs-parent {
+	
+}
+
+.thumbs-active {
+	color : #000;
+	font-weight: 900;
+	text-decoration: underline;
+}
+
+.glyphicon-inactive {
+	color:gray; 
+	font-weight: normal;
+	text-decoration: none;
+}
+
+.ui-autocomplete {
+	!important;
+}
+
+/*  Labels  */
+.label-clinical-trials {
+    background-color:#CC99FF;
+    color:#fff;
+    display: inline-block;
+}
+
+.label-genes {
+    background-color:#339999;
+    color:#fff;
+    display: inline-block;
+}
+
+.label-diseases {
+	background-color: #B80000;
+	color:#fff;
+	display: inline-block;
+}
+/**********************/
+
+/***** Bootstrap Buttons ********/
+
+label.btn.btn-mutation {
+	background-color : #f2dede;
+	border-color: #ea2f10;
+	font-size: 10px;
+	overflow: hidden;
+}
+
+label.btn.btn-mutation.active {
+	background-color : #EB6161;
+	color: #fff;
+}
+
+label.btn.btn-pathway {
+	background-color : #fcf8e3;
+	border-color: #d08002;
+	font-size: 10px;
+	overflow: hidden;
+}
+
+label.btn.btn-pathway.active {
+	background-color : #e99002;
+	color: #fff;
+}
+
+/**********************/
+
+/* Search result table row CSS */
+.search-result-row-mouseover {
+	background-color:#E8E8E8;
+}
+
+.search-result-row-mouseout {
+	background-color:#FFF;
+}
+
+.search-result-row-select {
+	background-color:#FFFF99;
+}
+/******************************/
+
+.auto-annotated {
+	background-color: #F8F2AF;
+	font-weight: bold;
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f4f4f4', endColorstr='#eeeeee', GradientType=0 );
+}
+
+    [contenteditable="true"].single-line {
+        white-space: nowrap;
+        overflow: hidden;
+    } 
+    [contenteditable="true"].single-line br {
+        display:none;
+
+    }
+    [contenteditable="true"].single-line * {
+        display:inline;
+        white-space:nowrap;
+    }
+    
+.highlight {
+	background-color: yellow;
+	padding: 0px;
+	margin: 0px;
+}
